@@ -1,0 +1,43 @@
+# Fly.io deployment configuration for Google Sheets MCP Server
+
+app = "mcp-google-sheets"
+primary_region = "iad"  # Change to your preferred region
+
+[build]
+
+[env]
+  # Environment variables will be set via fly secrets
+  PORT = "8080"
+  HOST = "0.0.0.0"
+
+[http_service]
+  internal_port = 8080
+  force_https = true
+  auto_stop_machines = true
+  auto_start_machines = true
+  min_machines_running = 0
+  processes = ["app"]
+
+[[vm]]
+  memory = "512mb"
+  cpu_kind = "shared"
+  cpus = 1
+
+# Health check configuration
+[http_service.checks]
+  [http_service.checks.health]
+    grace_period = "10s"
+    interval = "30s"
+    method = "GET"
+    timeout = "5s"
+    path = "/health"
+
+# Security headers
+[http_service.concurrency]
+  type = "connections"
+  hard_limit = 100
+  soft_limit = 80
+
+# Restart policy
+[http_service.restart]
+  policy = "always"

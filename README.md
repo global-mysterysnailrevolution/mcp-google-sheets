@@ -20,6 +20,18 @@
 
 `mcp-google-sheets` is a Python-based MCP server that acts as a bridge between any MCP-compatible client (like Claude Desktop) and the Google Sheets API. It allows you to interact with your Google Spreadsheets using a defined set of tools, enabling powerful automation and data manipulation workflows driven by AI.
 
+## 🚀 ChatGPT Custom Connector Support
+
+This server now supports **ChatGPT Custom Connectors**! Deploy it as a custom connector to enable AI-powered spreadsheet operations directly in ChatGPT.
+
+### Quick ChatGPT Integration
+
+1. **Deploy to cloud**: Use our deployment scripts for [Fly.io](scripts/deploy-fly.sh) or [Railway](scripts/deploy-railway.sh)
+2. **Add to ChatGPT**: Go to Settings → Connectors → Add Custom Connector
+3. **Start using**: Ask ChatGPT to create spreadsheets, update cells, and manage your data!
+
+📋 **[Complete ChatGPT Deployment Guide](CHATGPT_DEPLOYMENT_GUIDE.md)** - Step-by-step instructions for ChatGPT integration
+
 
 ## 🚀 Quick Start (Using `uvx`)
 
@@ -93,7 +105,7 @@ You're ready! Start issuing commands via your MCP client.
 
 ## 🛠️ Available Tools & Resources
 
-This server exposes the following tools for interacting with Google Sheets:
+This server exposes **15 powerful tools** for interacting with Google Sheets:
 
 *(Input parameters are typically strings unless otherwise specified)*
 
@@ -123,10 +135,17 @@ This server exposes the following tools for interacting with Google Sheets:
     *   `sheet` (string)
     *   `ranges` (object): Dictionary mapping range strings (A1 notation) to 2D arrays of values `{ "A1:B2": [[1, 2], [3, 4]], "D5": [["Hello"]] }`.
     *   _Returns:_ Batch update result object.
-*   **`add_rows`**: Appends rows to the end of a sheet (after the last row with data).
+*   **`add_rows`**: Adds rows to a sheet.
     *   `spreadsheet_id` (string)
     *   `sheet` (string)
-    *   `data` (2D array): Rows to append.
+    *   `count` (integer): Number of rows to add.
+    *   `start_row` (optional integer): 0-based row index to start adding.
+    *   _Returns:_ Update result object.
+*   **`add_columns`**: Adds columns to a sheet.
+    *   `spreadsheet_id` (string)
+    *   `sheet` (string)
+    *   `count` (integer): Number of columns to add.
+    *   `start_column` (optional integer): 0-based column index to start adding.
     *   _Returns:_ Update result object.
 *   **`list_sheets`**: Lists all sheet names within a spreadsheet.
     *   `spreadsheet_id` (string)
@@ -135,6 +154,17 @@ This server exposes the following tools for interacting with Google Sheets:
     *   `spreadsheet_id` (string)
     *   `title` (string): Name for the new sheet.
     *   _Returns:_ New sheet properties object.
+*   **`copy_sheet`**: Copies a sheet from one spreadsheet to another.
+    *   `src_spreadsheet` (string): Source spreadsheet ID.
+    *   `src_sheet` (string): Source sheet name.
+    *   `dst_spreadsheet` (string): Destination spreadsheet ID.
+    *   `dst_sheet` (string): Destination sheet name.
+    *   _Returns:_ Copy result object.
+*   **`rename_sheet`**: Renames an existing sheet.
+    *   `spreadsheet` (string): Spreadsheet ID.
+    *   `sheet` (string): Current sheet name.
+    *   `new_name` (string): New sheet name.
+    *   _Returns:_ Rename result object.
 *   **`get_multiple_sheet_data`**: Fetches data from multiple ranges across potentially different spreadsheets in one call.
     *   `queries` (array of objects): Each object needs `spreadsheet_id`, `sheet`, and `range`. `[{spreadsheet_id: 'abc', sheet: 'Sheet1', range: 'A1:B2'}, ...]`.
     *   _Returns:_ List of objects, each containing the query params and fetched `data` or an `error`.
@@ -147,9 +177,6 @@ This server exposes the following tools for interacting with Google Sheets:
     *   `recipients` (array of objects): `[{email_address: 'user@example.com', role: 'writer'}, ...]`. Roles: `reader`, `commenter`, `writer`.
     *   `send_notification` (optional boolean, default True): Send email notifications.
     *   _Returns:_ Dictionary with `successes` and `failures` lists.
-*   **`add_columns`**: Adds columns to a sheet. *(Verify parameters if implemented)*
-*   **`copy_sheet`**: Duplicates a sheet within a spreadsheet. *(Verify parameters if implemented)*
-*   **`rename_sheet`**: Renames an existing sheet. *(Verify parameters if implemented)*
 
 **MCP Resources:**
 
@@ -277,7 +304,38 @@ uvx mcp-google-sheets@latest
 ```
 `uvx` handles fetching and running the package temporarily.
 
-### Method 2: For Development (Cloning the Repo)
+### Method 2: HTTP Server for ChatGPT Connectors
+
+For ChatGPT custom connector integration, run the HTTP server:
+
+```bash
+# Using uvx
+uvx mcp-google-sheets@latest --http
+
+# Or locally
+uv run mcp-google-sheets-http
+```
+
+The HTTP server provides REST API endpoints that ChatGPT can use to interact with your spreadsheets.
+
+### Method 3: Docker Deployment
+
+For production deployments:
+
+```bash
+# Build and run with Docker Compose
+docker-compose up -d
+
+# Or build manually
+docker build -t mcp-google-sheets .
+docker run -p 8000:8000 \
+  -e SERVICE_ACCOUNT_PATH=/app/credentials/service-account.json \
+  -e DRIVE_FOLDER_ID=your_folder_id \
+  -v ./credentials:/app/credentials:ro \
+  mcp-google-sheets
+```
+
+### Method 4: For Development (Cloning the Repo)
 
 If you want to modify the code:
 
@@ -286,13 +344,15 @@ If you want to modify the code:
 3.  **Run using `uv`:** (Uses the local code)
     ```bash
     uv run mcp-google-sheets
-    # Or via the script name if defined in pyproject.toml, e.g.:
-    # uv run start
+    # Or HTTP mode for ChatGPT:
+    uv run mcp-google-sheets-http
     ```
 
 ---
 
-## 🔌 Usage with Claude Desktop
+## 🔌 Usage with MCP Clients
+
+### Claude Desktop
 
 Add the server config to `claude_desktop_config.json` under `mcpServers`. Choose the block matching your setup:
 
@@ -439,6 +499,23 @@ Add the server config to `claude_desktop_config.json` under `mcpServers`. Choose
 *Note: Use `--directory` flag to specify the project path, and adjust paths to match your actual workspace location.*
 </details>
 
+### ChatGPT Custom Connector
+
+Add the HTTP server URL to ChatGPT as a custom connector:
+
+1. **Deploy the server** using one of the deployment methods above
+2. **In ChatGPT**: Go to Settings → Connectors → Add Connector → Custom
+3. **Configure**:
+   - Name: `Google Sheets MCP`
+   - Base URL: `https://your-deployment-url.com`
+   - Authentication: None (handled by service account)
+4. **Test** with prompts like:
+   - "Create a new spreadsheet called 'Project Tracker'"
+   - "List all my spreadsheets"
+   - "Update cell A1 in my 'Budget' sheet to 'Total Revenue'"
+
+📋 **[Complete ChatGPT Integration Guide](CHATGPT_DEPLOYMENT_GUIDE.md)**
+
 ---
 
 ## 💬 Example Prompts for Claude
@@ -472,4 +549,477 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 *   Built with [FastMCP](https://github.com/cognitiveapis/fastmcp).
 *   Inspired by [kazz187/mcp-google-spreadsheet](https://github.com/kazz187/mcp-google-spreadsheet).
+*   Uses Google API Python Client libraries.
+*   **Setup:**
+
+    *   **Local Development:** Run `gcloud auth application-default login` once
+
+    *   **Google Cloud:** Attach a service account to your compute resource
+
+    *   **Environment Variable:** Set `GOOGLE_APPLICATION_CREDENTIALS=/path/to/service-account.json` (Google's standard)
+
+*   **No additional environment variables needed** - ADC is used automatically as a fallback when other methods fail.
+
+
+
+**Note:** `GOOGLE_APPLICATION_CREDENTIALS` is Google's official standard environment variable, while `SERVICE_ACCOUNT_PATH` is specific to this MCP server. If you set `GOOGLE_APPLICATION_CREDENTIALS`, ADC will find it automatically.
+
+
+
+### Authentication Priority & Summary
+
+
+
+The server checks for credentials in this order:
+
+
+
+1.  `CREDENTIALS_CONFIG` (Base64 content)
+
+2.  `SERVICE_ACCOUNT_PATH` (Path to Service Account JSON)
+
+3.  `CREDENTIALS_PATH` (Path to OAuth JSON) - triggers interactive flow if token is missing/expired
+
+4.  **Application Default Credentials (ADC)** - automatic fallback
+
+
+
+**Environment Variable Summary:**
+
+
+
+| Variable               | Method(s)                   | Description                                                     | Default          |
+
+| :--------------------- | :-------------------------- | :-------------------------------------------------------------- | :--------------- |
+
+| `SERVICE_ACCOUNT_PATH` | Service Account             | Path to the Service Account JSON key file (MCP server specific). | -                |
+
+| `GOOGLE_APPLICATION_CREDENTIALS` | ADC                   | Path to service account key (Google's standard variable).       | -                |
+
+| `DRIVE_FOLDER_ID`      | Service Account             | ID of the Google Drive folder shared with the Service Account.  | -                |
+
+| `CREDENTIALS_PATH`     | OAuth 2.0                   | Path to the OAuth 2.0 Client ID JSON file.                    | `credentials.json` |
+
+| `TOKEN_PATH`           | OAuth 2.0                   | Path to store the generated OAuth token.                        | `token.json`     |
+
+| `CREDENTIALS_CONFIG`   | Service Account / OAuth 2.0 | Base64 encoded JSON string of credentials content.              | -                |
+
+
+
+---
+
+
+
+## ⚙️ Running the Server (Detailed)
+
+
+
+### Method 1: Using `uvx` (Recommended for Users)
+
+
+
+As shown in the [Ultra Quick Start](#-ultra-quick-start-using-uvx), this is the easiest way. Set environment variables, then run:
+
+
+
+```bash
+
+uvx mcp-google-sheets@latest
+
+```
+
+`uvx` handles fetching and running the package temporarily.
+
+
+
+### Method 2: For Development (Cloning the Repo)
+
+
+
+If you want to modify the code:
+
+
+
+1.  **Clone:** `git clone https://github.com/yourusername/mcp-google-sheets.git && cd mcp-google-sheets` (Use actual URL)
+
+2.  **Set Environment Variables:** As described above.
+
+3.  **Run using `uv`:** (Uses the local code)
+
+    ```bash
+
+    uv run mcp-google-sheets
+
+    # Or via the script name if defined in pyproject.toml, e.g.:
+
+    # uv run start
+
+    ```
+
+
+
+---
+
+
+
+## 🔌 Usage with Claude Desktop
+
+
+
+Add the server config to `claude_desktop_config.json` under `mcpServers`. Choose the block matching your setup:
+
+
+
+**⚠️ Important Notes:**
+
+- **🍎 macOS Users:** use the full path: `"/Users/yourusername/.local/bin/uvx"` instead of just `"uvx"`
+
+
+
+<details>
+
+<summary>🔵 Config: uvx + Service Account (Recommended)</summary>
+
+
+
+```json
+
+{
+
+  "mcpServers": {
+
+    "google-sheets": {
+
+      "command": "uvx",
+
+      "args": ["mcp-google-sheets@latest"],
+
+      "env": {
+
+        "SERVICE_ACCOUNT_PATH": "/full/path/to/your/service-account-key.json",
+
+        "DRIVE_FOLDER_ID": "your_shared_folder_id_here"
+
+      }
+
+    }
+
+  }
+
+}
+
+```
+
+
+
+**🍎 macOS Note:** If you get a `spawn uvx ENOENT` error, use the full path to `uvx`:
+
+```json
+
+{
+
+  "mcpServers": {
+
+    "google-sheets": {
+
+      "command": "/Users/yourusername/.local/bin/uvx",
+
+      "args": ["mcp-google-sheets@latest"],
+
+      "env": {
+
+        "SERVICE_ACCOUNT_PATH": "/full/path/to/your/service-account-key.json",
+
+        "DRIVE_FOLDER_ID": "your_shared_folder_id_here"
+
+      }
+
+    }
+
+  }
+
+}
+
+```
+
+*Replace `yourusername` with your actual username.*
+
+</details>
+
+
+
+<details>
+
+<summary>🔵 Config: uvx + OAuth 2.0</summary>
+
+
+
+```json
+
+{
+
+  "mcpServers": {
+
+    "google-sheets": {
+
+      "command": "uvx",
+
+      "args": ["mcp-google-sheets@latest"],
+
+      "env": {
+
+        "CREDENTIALS_PATH": "/full/path/to/your/credentials.json",
+
+        "TOKEN_PATH": "/full/path/to/your/token.json"
+
+      }
+
+    }
+
+  }
+
+}
+
+```
+
+*Note: A browser may open for Google login on first use. Ensure TOKEN_PATH is writable.*
+
+
+
+**🍎 macOS Note:** If you get a `spawn uvx ENOENT` error, replace `"command": "uvx"` with `"command": "/Users/yourusername/.local/bin/uvx"` (replace `yourusername` with your actual username).
+
+</details>
+
+
+
+<details>
+
+<summary>🔵 Config: uvx + CREDENTIALS_CONFIG (Service Account Example)</summary>
+
+
+
+```json
+
+{
+
+  "mcpServers": {
+
+    "google-sheets": {
+
+      "command": "uvx",
+
+      "args": ["mcp-google-sheets@latest"],
+
+      "env": {
+
+        "CREDENTIALS_CONFIG": "ewogICJ0eXBlIjogInNlcnZpY2VfYWNjb3VudCIsCiAgInByb2plY3RfaWQiOiAi...",
+
+        "DRIVE_FOLDER_ID": "your_shared_folder_id_here"
+
+      }
+
+    }
+
+  }
+
+}
+
+```
+
+*Note: Paste the full Base64 string for CREDENTIALS_CONFIG. DRIVE_FOLDER_ID is still needed for Service Account folder context.*
+
+
+
+**🍎 macOS Note:** If you get a `spawn uvx ENOENT` error, replace `"command": "uvx"` with `"command": "/Users/yourusername/.local/bin/uvx"` (replace `yourusername` with your actual username).
+
+</details>
+
+
+
+<details>
+
+<summary>🔵 Config: uvx + Application Default Credentials (ADC)</summary>
+
+
+
+**Option 1: With GOOGLE_APPLICATION_CREDENTIALS**
+
+```json
+
+{
+
+  "mcpServers": {
+
+    "google-sheets": {
+
+      "command": "uvx",
+
+      "args": ["mcp-google-sheets@latest"],
+
+      "env": {
+
+        "GOOGLE_APPLICATION_CREDENTIALS": "/path/to/service-account.json"
+
+      }
+
+    }
+
+  }
+
+}
+
+```
+
+
+
+**Option 2: With gcloud auth (no env vars needed)**
+
+```json
+
+{
+
+  "mcpServers": {
+
+    "google-sheets": {
+
+      "command": "uvx",
+
+      "args": ["mcp-google-sheets@latest"],
+
+      "env": {}
+
+    }
+
+  }
+
+}
+
+```
+
+*Prerequisites: Run `gcloud auth application-default login` first.*
+
+
+
+**🍎 macOS Note:** If you get a `spawn uvx ENOENT` error, replace `"command": "uvx"` with `"command": "/Users/yourusername/.local/bin/uvx"` (replace `yourusername` with your actual username).
+
+</details>
+
+
+
+<details>
+
+<summary>🟡 Config: Development (Running from cloned repo)</summary>
+
+
+
+```json
+
+{
+
+  "mcpServers": {
+
+    "mcp-google-sheets-local": {
+
+      "command": "uv",
+
+      "args": [
+
+        "run",
+
+        "--directory",
+
+        "/path/to/your/mcp-google-sheets",
+
+        "mcp-google-sheets"
+
+      ],
+
+      "env": {
+
+        "SERVICE_ACCOUNT_PATH": "/path/to/your/mcp-google-sheets/service_account.json",
+
+        "DRIVE_FOLDER_ID": "your_drive_folder_id_here"
+
+      }
+
+    }
+
+  }
+
+}
+
+```
+
+*Note: Use `--directory` flag to specify the project path, and adjust paths to match your actual workspace location.*
+
+</details>
+
+
+
+---
+
+
+
+## 💬 Example Prompts for Claude
+
+
+
+Once connected, try prompts like:
+
+
+
+*   "List all spreadsheets I have access to." (or "in my AI Managed Sheets folder")
+
+*   "Create a new spreadsheet titled 'Quarterly Sales Report Q3 2024'."
+
+*   "In the 'Quarterly Sales Report' spreadsheet, get the data from Sheet1 range A1 to E10."
+
+*   "Add a new sheet named 'Summary' to the spreadsheet with ID `1aBcDeFgHiJkLmNoPqRsTuVwXyZ`."
+
+*   "In my 'Project Tasks' spreadsheet, Sheet 'Tasks', update cell B2 to 'In Progress'."
+
+*   "Append these rows to the 'Log' sheet in spreadsheet `XYZ`: `[['2024-07-31', 'Task A Completed'], ['2024-08-01', 'Task B Started']]`"
+
+*   "Get a summary of the spreadsheets 'Sales Data' and 'Inventory Count'."
+
+*   "Share the 'Team Vacation Schedule' spreadsheet with `team@example.com` as a reader and `manager@example.com` as a writer. Don't send notifications."
+
+
+
+---
+
+
+
+## 🤝 Contributing
+
+
+
+Contributions are welcome! Please open an issue to discuss bugs or feature requests. Pull requests are appreciated.
+
+
+
+---
+
+
+
+## 📄 License
+
+
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+
+
+---
+
+
+
+## 🙏 Credits
+
+
+
+*   Built with [FastMCP](https://github.com/cognitiveapis/fastmcp).
+
+*   Inspired by [kazz187/mcp-google-spreadsheet](https://github.com/kazz187/mcp-google-spreadsheet).
+
 *   Uses Google API Python Client libraries.

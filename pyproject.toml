@@ -9,6 +9,9 @@ dependencies = [
     "google-auth>=2.28.1",
     "google-auth-oauthlib>=1.2.0",
     "google-api-python-client>=2.117.0",
+    "fastapi>=0.104.0",
+    "uvicorn[standard]>=0.24.0",
+    "pydantic>=2.0.0",
 ]
 [[project.authors]]
 name = "Xing Wu"
@@ -32,3 +35,4 @@ strict = true
 
 [project.scripts]
 mcp-google-sheets = "mcp_google_sheets:main"
+mcp-google-sheets-http = "mcp_google_sheets.http_server:main"

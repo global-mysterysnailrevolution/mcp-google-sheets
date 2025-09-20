@@ -1,0 +1,64 @@
+version: '3.8'
+
+services:
+  mcp-google-sheets:
+    build: .
+    container_name: mcp-google-sheets-server
+    restart: unless-stopped
+    environment:
+      # Service Account Authentication (Recommended for production)
+      - SERVICE_ACCOUNT_PATH=/app/credentials/service-account.json
+      - DRIVE_FOLDER_ID=${DRIVE_FOLDER_ID}
+      
+      # Alternative: OAuth Authentication
+      # - CREDENTIALS_PATH=/app/credentials/credentials.json
+      # - TOKEN_PATH=/app/credentials/token.json
+      
+      # Alternative: Base64 encoded credentials
+      # - CREDENTIALS_CONFIG=${CREDENTIALS_CONFIG}
+      
+    volumes:
+      # Mount credentials directory (create this directory and place your service account JSON)
+      - ./credentials:/app/credentials:ro
+      
+      # Optional: Mount logs directory
+      - ./logs:/app/logs
+      
+    ports:
+      # Expose port for HTTP mode if needed
+      - "8000:8000"
+      
+    # Resource limits
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: '0.5'
+        reservations:
+          memory: 256M
+          cpus: '0.25'
+          
+    # Security options
+    security_opt:
+      - no-new-privileges:true
+      
+    # Read-only root filesystem for security
+    read_only: true
+    tmpfs:
+      - /tmp
+      - /var/tmp
+      
+    # Health check
+    healthcheck:
+      test: ["CMD", "python", "-c", "import sys; sys.exit(0)"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+# Create required directories
+volumes:
+  credentials:
+    driver: local
+  logs:
+    driver: local
