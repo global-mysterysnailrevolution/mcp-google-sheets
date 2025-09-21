@@ -14,7 +14,7 @@ RUN apt-get update && apt-get install -y \
 RUN pip install uv
 
 # Copy project files
-COPY pyproject.toml uv.lock ./
+COPY pyproject.toml uv.lock README.md ./
 COPY src/ ./src/
 
 # Install dependencies
@@ -32,4 +32,4 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
     CMD python -c "import sys; sys.exit(0)"
 
 # Default command (can be overridden)
-CMD ["uv", "run", "mcp-google-sheets"]
+CMD ["uv", "run", "mcp-google-sheets-http"]
