@@ -46,7 +46,22 @@ async def spreadsheet_lifespan(server: FastMCP) -> AsyncIterator[SpreadsheetCont
     creds = None
 
     if CREDENTIALS_CONFIG:
-        creds = service_account.Credentials.from_service_account_info(json.loads(base64.b64decode(CREDENTIALS_CONFIG)), scopes=SCOPES)
+        try:
+            # Try to decode as Service Account first
+            decoded_creds = json.loads(base64.b64decode(CREDENTIALS_CONFIG))
+            if 'type' in decoded_creds and decoded_creds['type'] == 'service_account':
+                creds = service_account.Credentials.from_service_account_info(decoded_creds, scopes=SCOPES)
+                print("Using Service Account authentication from CREDENTIALS_CONFIG")
+            elif 'installed' in decoded_creds or 'web' in decoded_creds:
+                # This is OAuth credentials, we'll handle it in the OAuth flow below
+                print("OAuth credentials detected in CREDENTIALS_CONFIG, will use OAuth flow")
+                creds = None
+            else:
+                print("Unknown credentials format in CREDENTIALS_CONFIG")
+                creds = None
+        except Exception as e:
+            print(f"Error parsing CREDENTIALS_CONFIG: {e}")
+            creds = None
     
     # Check for explicit service account authentication first (custom SERVICE_ACCOUNT_PATH)
     if not creds and SERVICE_ACCOUNT_PATH and os.path.exists(SERVICE_ACCOUNT_PATH):
@@ -75,8 +90,24 @@ async def spreadsheet_lifespan(server: FastMCP) -> AsyncIterator[SpreadsheetCont
                 creds.refresh(Request())
             else:
                 try:
-                    flow = InstalledAppFlow.from_client_secrets_file(CREDENTIALS_PATH, SCOPES)
-                    creds = flow.run_local_server(port=0)
+                    # Check if we have OAuth credentials in CREDENTIALS_CONFIG
+                    if CREDENTIALS_CONFIG:
+                        try:
+                            decoded_creds = json.loads(base64.b64decode(CREDENTIALS_CONFIG))
+                            if 'installed' in decoded_creds or 'web' in decoded_creds:
+                                # Use OAuth credentials from CREDENTIALS_CONFIG
+                                flow = InstalledAppFlow.from_client_config(decoded_creds, SCOPES)
+                                creds = flow.run_local_server(port=0)
+                            else:
+                                raise ValueError("Invalid OAuth credentials format")
+                        except Exception as e:
+                            print(f"Error using OAuth credentials from CREDENTIALS_CONFIG: {e}")
+                            # Fall back to file-based credentials
+                            flow = InstalledAppFlow.from_client_secrets_file(CREDENTIALS_PATH, SCOPES)
+                            creds = flow.run_local_server(port=0)
+                    else:
+                        flow = InstalledAppFlow.from_client_secrets_file(CREDENTIALS_PATH, SCOPES)
+                        creds = flow.run_local_server(port=0)
                     
                     # Save the credentials for the next run
                     with open(TOKEN_PATH, 'w') as token:
