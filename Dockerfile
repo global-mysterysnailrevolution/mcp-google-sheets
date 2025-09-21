@@ -1,6 +1,10 @@
 # Use Python 3.11 slim image for better performance and smaller size
 FROM python:3.11-slim
 
+# Force rebuild by adding a build argument
+ARG BUILD_DATE
+ARG BUILD_VERSION=1.0.0
+
 # Set working directory
 WORKDIR /app
 
