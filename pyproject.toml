@@ -23,7 +23,7 @@ email = "xingwu.cs@gmail.com"
 "Repository" = "https://github.com/xing5/mcp-google-sheets.git"
 
 [build-system]
-requires = ["hatchling", "uv-dynamic-versioning"]
+requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 # Static version for Docker builds
