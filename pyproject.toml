@@ -1,6 +1,6 @@
 [project]
 name = "mcp-google-sheets"
-dynamic = ["version"]
+version = "1.0.0"
 description = "This MCP server integrates with your Google Drive and Google Sheets, to enable creating and modifying spreadsheets."
 readme = "README.md"
 requires-python = ">=3.10"
@@ -26,12 +26,14 @@ email = "xingwu.cs@gmail.com"
 requires = ["hatchling", "uv-dynamic-versioning"]
 build-backend = "hatchling.build"
 
-[tool.hatch.version]
-source = "uv-dynamic-versioning"
-
-[tool.uv-dynamic-versioning]
-pattern = "default"
-strict = true
+# Static version for Docker builds
+# For development with dynamic versioning, use: dynamic = ["version"] and uncomment below
+# [tool.hatch.version]
+# source = "uv-dynamic-versioning"
+# 
+# [tool.uv-dynamic-versioning]
+# pattern = "default"
+# strict = true
 
 [project.scripts]
 mcp-google-sheets = "mcp_google_sheets:main"
