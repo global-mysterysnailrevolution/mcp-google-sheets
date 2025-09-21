@@ -36,4 +36,4 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
     CMD python -c "import sys; sys.exit(0)"
 
 # Default command (can be overridden)
-CMD ["uv", "run", "mcp-google-sheets-http"]
+CMD ["uv", "run", "python", "-m", "mcp_google_sheets.sse_server"]
