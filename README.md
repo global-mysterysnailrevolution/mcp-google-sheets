@@ -24,6 +24,10 @@
 
 This server now supports **ChatGPT Custom Connectors**! Deploy it as a custom connector to enable AI-powered spreadsheet operations directly in ChatGPT.
 
+### 🔄 Latest Update (v1.0.1)
+- ✅ Fixed SSE MCP server implementation for ChatGPT connectors
+- ✅ Deployed with proper search and fetch tools for ChatGPT integration
+
 ### Quick ChatGPT Integration
 
 1. **Deploy to cloud**: Use our deployment scripts for [Fly.io](scripts/deploy-fly.sh) or [Railway](scripts/deploy-railway.sh)
