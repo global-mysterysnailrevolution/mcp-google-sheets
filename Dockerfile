@@ -3,7 +3,7 @@ FROM python:3.11-slim
 
 # Force rebuild by adding a build argument
 ARG BUILD_DATE
-ARG BUILD_VERSION=1.0.0
+ARG BUILD_VERSION=1.0.2
 
 # Set working directory
 WORKDIR /app
