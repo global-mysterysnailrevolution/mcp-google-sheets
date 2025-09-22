@@ -194,8 +194,9 @@ async def fetch(id: str, ctx: Context) -> Dict[str, Any]:
 def main():
     """Main function to start the MCP server."""
     logger.info("Starting Google Sheets MCP Server")
-    # Run the server
-    mcp.run()
+    logger.info("Server will be available at http://0.0.0.0:8000/sse/")
+    # Run the server with HTTP transport for Railway
+    mcp.run(transport="sse", host="0.0.0.0", port=8000)
 
 if __name__ == "__main__":
     main()
