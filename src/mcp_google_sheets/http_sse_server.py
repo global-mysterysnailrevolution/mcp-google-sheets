@@ -72,6 +72,7 @@ async def root():
         "context_initialized": spreadsheet_context is not None,
         "endpoints": {
             "sse": "/sse/",
+            "sse_root": "/sse",
             "search": "/search",
             "fetch": "/fetch",
             "health": "/"
@@ -85,12 +86,38 @@ async def sse_endpoint():
         "message": "Google Sheets MCP Server is running",
         "status": "ready",
         "tools": ["search", "fetch"],
-        "transport": "sse"
+        "transport": "sse",
+        "capabilities": {
+            "search": True,
+            "fetch": True
+        }
+    }
+
+@app.get("/sse")
+async def sse_root():
+    """Root SSE endpoint"""
+    return {
+        "name": "Google Sheets MCP Server",
+        "version": "1.0.6",
+        "capabilities": {
+            "search": True,
+            "fetch": True
+        },
+        "endpoints": {
+            "search": "/search",
+            "fetch": "/fetch"
+        }
     }
 
 @app.post("/search")
-async def search_tool(query: str):
+async def search_tool(request: dict):
     """Search for spreadsheets"""
+    # Handle both direct query string and JSON request body
+    if isinstance(request, dict):
+        query = request.get("query", "")
+    else:
+        query = str(request)
+    
     if not query or not query.strip():
         return {"results": []}
 
@@ -143,8 +170,14 @@ async def search_tool(query: str):
         raise HTTPException(status_code=500, detail=f"Search failed: {str(e)}")
 
 @app.post("/fetch")
-async def fetch_tool(id: str):
+async def fetch_tool(request: dict):
     """Fetch complete spreadsheet content"""
+    # Handle both direct ID string and JSON request body
+    if isinstance(request, dict):
+        id = request.get("id", "")
+    else:
+        id = str(request)
+    
     if not id:
         raise HTTPException(status_code=400, detail="Spreadsheet ID is required")
 
