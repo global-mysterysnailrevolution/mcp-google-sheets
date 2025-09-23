@@ -224,9 +224,16 @@ async def fetch_tool(id: str):
 
 def main():
     """Main function to start the HTTP server"""
+    import os
+    
+    # Get port from Railway environment variable, default to 8000
+    port = int(os.environ.get("PORT", 8000))
+    
     logger.info("Starting Google Sheets MCP HTTP Server")
-    logger.info("Server will be available at http://0.0.0.0:8000")
-    uvicorn.run(app, host="0.0.0.0", port=8000, log_level="info")
+    logger.info(f"Server will be available at http://0.0.0.0:{port}")
+    logger.info(f"Railway PORT environment variable: {os.environ.get('PORT', 'Not set')}")
+    
+    uvicorn.run(app, host="0.0.0.0", port=port, log_level="info")
 
 if __name__ == "__main__":
     main()

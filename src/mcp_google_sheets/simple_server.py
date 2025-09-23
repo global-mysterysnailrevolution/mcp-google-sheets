@@ -36,10 +36,17 @@ async def test():
 
 def main():
     """Main function to start the server"""
-    logger.info("Starting Simple Test Server")
-    logger.info("Server will be available at http://0.0.0.0:8000")
+    import os
+    
+    # Get port from Railway environment variable, default to 8000
+    port = int(os.environ.get("PORT", 8000))
+    
+    logger.info(f"Starting Simple Test Server")
+    logger.info(f"Server will be available at http://0.0.0.0:{port}")
+    logger.info(f"Railway PORT environment variable: {os.environ.get('PORT', 'Not set')}")
+    
     try:
-        uvicorn.run(app, host="0.0.0.0", port=8000, log_level="info")
+        uvicorn.run(app, host="0.0.0.0", port=port, log_level="info")
     except Exception as e:
         logger.error(f"Server failed to start: {e}")
         raise
