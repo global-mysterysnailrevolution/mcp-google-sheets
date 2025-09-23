@@ -153,12 +153,29 @@ def main():
     port = int(os.environ.get("PORT", 8000))
     
     logger.info("Starting Google Sheets MCP HTTP Server")
-    logger.info(f"Server will be available at http://0.0.0.0:{port}")
     logger.info(f"Railway PORT environment variable: {os.environ.get('PORT', 'Not set')}")
     logger.info("MCP endpoint will be available at /mcp")
     
-    # Run the MCP server with HTTP transport
-    mcp.run(transport="sse", host="0.0.0.0", port=port)
+    # Create a FastAPI app and mount the MCP server
+    from fastapi import FastAPI
+    app = FastAPI()
+    
+    # Mount the MCP server at /mcp endpoint
+    app.mount("/mcp", mcp)
+    
+    # Add a root endpoint for health checks
+    @app.get("/")
+    async def health_check():
+        return {
+            "status": "healthy",
+            "service": "Google Sheets MCP Server",
+            "version": "1.0.7",
+            "mcp_endpoint": "/mcp"
+        }
+    
+    # Run with uvicorn
+    import uvicorn
+    uvicorn.run(app, host="0.0.0.0", port=port, log_level="info")
 
 if __name__ == "__main__":
     main()
