@@ -35,5 +35,5 @@ EXPOSE 8000
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
     CMD python -c "import sys; sys.exit(0)"
 
-# Default command (can be overridden) - back to full Google Sheets server
-CMD ["uv", "run", "python", "-m", "mcp_google_sheets.http_sse_server"]
+# Default command (can be overridden) - using proper MCP HTTP server
+CMD ["uv", "run", "python", "-m", "mcp_google_sheets.mcp_http_server"]
