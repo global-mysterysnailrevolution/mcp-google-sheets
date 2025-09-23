@@ -3,7 +3,7 @@ FROM python:3.11-slim
 
 # Force rebuild by adding a build argument
 ARG BUILD_DATE
-ARG BUILD_VERSION=1.0.3
+ARG BUILD_VERSION=1.0.4
 
 # Set working directory
 WORKDIR /app
@@ -35,5 +35,5 @@ EXPOSE 8000
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
     CMD python -c "import sys; sys.exit(0)"
 
-# Default command (can be overridden)
-CMD ["uv", "run", "python", "-m", "mcp_google_sheets.http_sse_server"]
+# Default command (can be overridden) - using simple server for testing
+CMD ["uv", "run", "python", "-m", "mcp_google_sheets.simple_server"]
