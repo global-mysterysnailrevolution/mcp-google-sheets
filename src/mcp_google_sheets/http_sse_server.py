@@ -6,6 +6,7 @@ HTTP Server with MCP SSE endpoint for Railway deployment
 import asyncio
 import json
 import logging
+import os
 from contextlib import asynccontextmanager
 from typing import Any, Dict, List
 
@@ -14,7 +15,12 @@ from fastapi.responses import StreamingResponse
 import uvicorn
 
 # Import the main MCP server components
-from .server import spreadsheet_lifespan, SpreadsheetContext
+try:
+    from .server import spreadsheet_lifespan, SpreadsheetContext
+    SHEETS_AVAILABLE = True
+except Exception as e:
+    logging.warning(f"Could not import Google Sheets components: {e}")
+    SHEETS_AVAILABLE = False
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -29,10 +35,20 @@ async def lifespan(app: FastAPI):
     global spreadsheet_context
     logger.info("Starting up Google Sheets MCP Server...")
     
-    # Initialize the spreadsheet context
-    async with spreadsheet_lifespan(None) as ctx:
-        spreadsheet_context = ctx
-        logger.info("✅ Google Sheets MCP context initialized")
+    if SHEETS_AVAILABLE:
+        try:
+            # Initialize the spreadsheet context
+            async with spreadsheet_lifespan(None) as ctx:
+                spreadsheet_context = ctx
+                logger.info("✅ Google Sheets MCP context initialized")
+                yield
+        except Exception as e:
+            logger.error(f"Failed to initialize Google Sheets context: {e}")
+            spreadsheet_context = None
+            yield
+    else:
+        logger.warning("Google Sheets components not available - running in limited mode")
+        spreadsheet_context = None
         yield
     
     logger.info("Shutting down Google Sheets MCP Server...")
@@ -51,7 +67,9 @@ async def root():
     return {
         "status": "healthy",
         "service": "Google Sheets MCP Server",
-        "version": "1.0.2",
+        "version": "1.0.3",
+        "sheets_available": SHEETS_AVAILABLE,
+        "context_initialized": spreadsheet_context is not None,
         "endpoints": {
             "sse": "/sse/",
             "search": "/search",
@@ -78,6 +96,8 @@ async def search_tool(query: str):
 
     try:
         global spreadsheet_context
+        if not SHEETS_AVAILABLE:
+            raise HTTPException(status_code=503, detail="Google Sheets components not available")
         if not spreadsheet_context:
             raise HTTPException(status_code=503, detail="Spreadsheet context not initialized")
         
@@ -130,6 +150,8 @@ async def fetch_tool(id: str):
 
     try:
         global spreadsheet_context
+        if not SHEETS_AVAILABLE:
+            raise HTTPException(status_code=503, detail="Google Sheets components not available")
         if not spreadsheet_context:
             raise HTTPException(status_code=503, detail="Spreadsheet context not initialized")
         
